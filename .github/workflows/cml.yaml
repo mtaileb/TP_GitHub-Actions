@@ -1,24 +1,49 @@
 name: model-wine-quality
-on: [push]
+
+on:
+  push:
+    branches:
+      - main  # Trigger workflow on pushes to the main branch
+
 jobs:
   run:
-    runs-on: [ubuntu-latest]
+    runs-on: ubuntu-latest
     container: docker://dvcorg/cml-py3:latest
     steps:
-      - uses: actions/checkout@v3
-      - name: cml_run
-        env:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Upgrade glibc
         run: |
-          # Your ML workflow goes here
+          apt-get update && apt-get install -y --no-install-recommends wget build-essential
+          wget http://ftp.gnu.org/gnu/libc/glibc-2.28.tar.gz
+          tar -xvzf glibc-2.28.tar.gz
+          cd glibc-2.28
+          mkdir build && cd build
+          ../configure --prefix=/opt/glibc-2.28
+          make -j$(nproc)
+          make install
+          export LD_LIBRARY_PATH=/opt/glibc-2.28/lib:$LD_LIBRARY_PATH
+
+      - name: Install Dependencies
+        run: |
           pip install -r requirements.txt
+
+      - name: Train Model
+        run: |
           python train.py
 
+      - name: Generate Model Metrics
+        run: |
           echo "## Model metrics" > report.md
           cat metrics.txt >> report.md
 
+      - name: Add Data Visualization
+        run: |
           echo "## Data viz" >> report.md
           cml-publish feature_importance.png --md >> report.md
           cml-publish residuals.png --md >> report.md
 
+      - name: Post Report as Comment
+        run: |
           cml-send-comment report.md

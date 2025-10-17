@@ -3,10 +3,10 @@ name: model-wine-quality
 on: [push]
 jobs:
   run:
-    runs-on: [ubuntu-latest]
+    runs-on: [debian-bullseye]
     container: docker://dvcorg/cml-py3:latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - name: cml_run
         env:
           repo_token: ${{ secrets.GITHUB_TOKEN }}

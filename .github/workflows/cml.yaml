@@ -1,4 +1,3 @@
-# Passage à checkout@v3
 name: model-wine-quality 
 on: [push]
 jobs:
